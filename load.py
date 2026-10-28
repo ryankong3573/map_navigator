@@ -28,11 +28,38 @@ def calculate_distance(node, neighbour_node):
 
     return c
 
-#This 
-def get_neighbours(data):
-    pass
+#This function will return a dictionary of each node as a key and its neigbouring nodes' id and distance as values
+def get_neighbours(data, nodes_list):
 
-    
+    neighbour_graph = {}
+
+    #Iterates through every single road in our database
+    for way in data["elements"]:
+
+        #create a list of nodes in one single way and pair the up with their neigbouring nodes
+        nodes = []
+        for node in way["nodes"]:
+            nodes.append(node)
+        paired_nodes = list(zip(nodes,nodes[1:]))
+
+        #create a dictionary of the node in nodes, in each node key stores its neighbours and each of their distance to the key node
+        for pairs in paired_nodes:
+            node1 = pairs[0]
+            node2 = pairs[1]
+
+            node1_coords = nodes_list[node1]
+            node2_coords = nodes_list[node2]
+            
+            if node1 not in neighbour_graph.keys():
+                neighbour_graph[node1] = []
+            neighbour_graph[node1].append((node2, calculate_distance(node1_coords, node2_coords)))
+
+            if node2 not in neighbour_graph.keys():
+                neighbour_graph[node2] = []
+            neighbour_graph[node2].append((node1, calculate_distance(node2_coords, node1_coords)))
+
+    return neighbour_graph
+
 
 
 data = convert_to_dict("map_data.json")
