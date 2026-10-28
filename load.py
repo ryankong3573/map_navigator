@@ -1,6 +1,14 @@
 import json
 import math
 
+CAR_ROADS = {
+    "motorway", "trunk", "primary", "secondary", "tertiary",
+    "unclassified", "residential",
+    "motorway_link", "trunk_link", "primary_link",
+    "secondary_link", "tertiary_link",
+    "living_street", "service", "road",
+}
+
 #This function converts a json file to a python dictionary
 def convert_to_dict(json_file):
     with open(json_file,"r") as file:
@@ -30,11 +38,13 @@ def calculate_distance(node, neighbour_node):
 
 #This function will return a dictionary of each node as a key and its neigbouring nodes' id and distance as values
 def get_neighbours(data, nodes_list):
-
     neighbour_graph = {}
 
     #Iterates through every single road in our database
     for way in data["elements"]:
+
+        if way["tags"]["highway"] not in CAR_ROADS:
+            continue
 
         #create a list of nodes in one single way and pair the up with their neigbouring nodes
         nodes = []
@@ -49,19 +59,29 @@ def get_neighbours(data, nodes_list):
 
             node1_coords = nodes_list[node1]
             node2_coords = nodes_list[node2]
-            
+
+            distance_between_nodes = calculate_distance(node1_coords, node2_coords)
+
             if node1 not in neighbour_graph.keys():
                 neighbour_graph[node1] = []
-            neighbour_graph[node1].append((node2, calculate_distance(node1_coords, node2_coords)))
-
             if node2 not in neighbour_graph.keys():
                 neighbour_graph[node2] = []
-            neighbour_graph[node2].append((node1, calculate_distance(node2_coords, node1_coords)))
 
+            if way["tags"].get("oneway") == "yes":
+                neighbour_graph[node1].append((node2, distance_between_nodes))
+
+            else:
+                neighbour_graph[node1].append((node2, distance_between_nodes))
+                neighbour_graph[node2].append((node1,  distance_between_nodes))
+                
     return neighbour_graph
 
 
+if __name__ == "__main__":
+    data = convert_to_dict("map_data.json")
+    nodes_list = create_list_of_nodes(data)
 
-data = convert_to_dict("map_data.json")
-nodes_list = create_list_of_nodes(data)
-
+    for elements in data["elements"]:
+        if elements["type"] != "way":
+            print(elements["type"])
+    print("done")
