@@ -1,0 +1,56 @@
+{
+  "elements": [
+    {
+      "type": "way",
+      "id": 101,
+      "nodes": [1, 2, 3],
+      "geometry": [
+        {"lat": 3.0400, "lon": 101.7400},
+        {"lat": 3.0405, "lon": 101.7400},
+        {"lat": 3.0410, "lon": 101.7400}
+      ],
+      "tags": {"highway": "residential", "name": "Test Road North-South"}
+    },
+    {
+      "type": "way",
+      "id": 102,
+      "nodes": [5, 2, 4],
+      "geometry": [
+        {"lat": 3.0405, "lon": 101.7395},
+        {"lat": 3.0405, "lon": 101.7400},
+        {"lat": 3.0405, "lon": 101.7405}
+      ],
+      "tags": {"highway": "residential", "name": "Test Road East-West"}
+    },
+    {
+      "type": "way",
+      "id": 103,
+      "nodes": [4, 6],
+      "geometry": [
+        {"lat": 3.0405, "lon": 101.7405},
+        {"lat": 3.0410, "lon": 101.7405}
+      ],
+      "tags": {"highway": "residential", "name": "Test One-Way", "oneway": "yes"}
+    },
+    {
+      "type": "way",
+      "id": 104,
+      "nodes": [6, 3],
+      "geometry": [
+        {"lat": 3.0410, "lon": 101.7405},
+        {"lat": 3.0410, "lon": 101.7400}
+      ],
+      "tags": {"highway": "unclassified", "name": "Test Lane"}
+    },
+    {
+      "type": "way",
+      "id": 105,
+      "nodes": [3, 7],
+      "geometry": [
+        {"lat": 3.0410, "lon": 101.7400},
+        {"lat": 3.0415, "lon": 101.7400}
+      ],
+      "tags": {"highway": "footway"}
+    }
+  ]
+}
