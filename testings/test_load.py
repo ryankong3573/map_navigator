@@ -124,3 +124,43 @@ def test_all_edge_distances_are_about_55m(graph):
             assert 55 < dist < 56, f"edge {node} -> {neighbour} is {dist:.1f} m"
 
 
+# --- Street names ---
+@pytest.fixture(scope="module")
+def street_names(data):
+    return load.get_street_names(data)
+
+
+@pytest.mark.parametrize("pair, expected", [
+    ((1, 2), "Test Road North-South"),
+    ((2, 1), "Test Road North-South"),
+    ((2, 3), "Test Road North-South"),
+    ((3, 2), "Test Road North-South"),   # reverse direction
+    ((5, 2), "Test Road East-West"),
+    ((2, 4), "Test Road East-West"),
+    ((4, 2), "Test Road East-West"),
+    ((4, 6), "Test One-Way"),
+    ((6, 3), "Test Lane"),
+    ((3, 6), "Test Lane"),
+])
+def test_street_name_for_pair(street_names, pair, expected):
+    assert street_names[pair] == expected
+
+
+def test_oneway_has_no_reverse_name(street_names):
+    assert (6, 4) not in street_names
+
+
+def test_footway_not_included(street_names):
+    assert (3, 7) not in street_names
+    assert (7, 3) not in street_names
+
+
+def test_street_name_count(street_names):
+    # 4 two-way pairs x 2 directions + 1 one-way pair + 2 for Test Lane = 11
+    assert len(street_names) == 11
+
+
+def test_every_graph_edge_has_a_street_name(graph, street_names):
+    for node, edges in graph.items():
+        for neighbour, _ in edges:
+            assert (node, neighbour) in street_names, f"edge {node} -> {neighbour} has no street name"
