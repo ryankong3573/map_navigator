@@ -74,7 +74,7 @@ def get_neighbours(data, nodes_list):
                 neighbour_graph[node1].append((node2, distance_between_nodes))
                 neighbour_graph[node2].append((node1,  distance_between_nodes))
                 
-    return neighbour_graph
+    return neighbour_graph 
 
 #This function returns a dictionary of paired nodes and the street name the node is on e.g (1,2):Jalan Damai Perdana
 def get_street_names(data):
