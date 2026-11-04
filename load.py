@@ -76,12 +76,28 @@ def get_neighbours(data, nodes_list):
                 
     return neighbour_graph
 
+def get_street_names(data):
+    nodes_and_street ={
+
+    }
+    for way in data["elements"]:
+        if way["tags"].get("highway") in CAR_ROADS:
+            street_name = way["tags"].get("name","unnamed road")
+            nodes = []
+            for node in way["nodes"]:
+                nodes.append(node)
+            for node1,node2 in zip(nodes, nodes[1:]):
+                nodes_and_street[node1,node2] = street_name
+                if way["tags"].get("oneway") != "yes":
+                    nodes_and_street[node2,node1] = street_name
+    return nodes_and_street
+
+
+
+
 
 if __name__ == "__main__":
     data = convert_to_dict("map_data.json")
     nodes_list = create_list_of_nodes(data)
-
-    for elements in data["elements"]:
-        if elements["type"] != "way":
-            print(elements["type"])
+    
     print("done")
