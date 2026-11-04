@@ -1,10 +1,10 @@
 testings/
 
-This folder holds the test suite for load.py.
+This folder holds the test suite for load.py and routing.py .
 
 About these files
 
-test_load.py and test_data.json were generated with the help of Claude (Anthropic's AI assistant) to save time on writing test boilerplate.
+test_routing.py, test_load.py and test_data.json were generated with the help of Claude (Anthropic's AI assistant) to save time on writing test boilerplate.
 
 All code in this folder has been read, understood, and approved by me before use. The functions being tested (load.py, query.py) were written by me.
 

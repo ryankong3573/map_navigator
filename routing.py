@@ -34,7 +34,6 @@ def reconstruct_path(came_from, target):
     path.reverse()
     return path
 
-
 def a_star_search(start,target,graph,nodes_list):
     queue = [(load.calculate_distance(nodes_list[start],nodes_list[target]), start)]
     visited = set()
@@ -65,4 +64,3 @@ def a_star_search(start,target,graph,nodes_list):
 
     return None
 
-    
