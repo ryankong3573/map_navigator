@@ -64,3 +64,29 @@ def a_star_search(start,target,graph,nodes_list):
 
     return None
 
+#This function will convert our reconstructed path of nodes into proper street names where the nodes are located and the total distance needed to travel for each
+#street, streets that might need to be taken again are seperated
+"""
+node_and_street = pair of nodes and the street that they're in
+"""
+def street_path(path,node_and_street,graph):
+    street_path = []
+
+    for node1,node2 in zip(path, path[1:]):
+        street_name = node_and_street.get((node1,node2))
+        distance = 0
+
+        for neighbour_id, neigbour_distance in graph[node1]:
+            if neighbour_id == node2:
+                distance = neigbour_distance
+                break
+
+        if len(street_path) > 0:
+            if street_path[-1][0] != street_name:
+                street_path.append([street_name,distance])
+            else:
+                street_path[-1][1] += distance
+        else:
+            street_path.append([street_name,distance])
+
+    return street_path
