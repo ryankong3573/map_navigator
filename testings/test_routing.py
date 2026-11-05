@@ -149,3 +149,57 @@ def test_nearest_node_exactly_on_node_4(graph, nodes):
 def test_nearest_node_skips_footway_node(graph, nodes):
     # right on top of node 7, but 7 isn't drivable, so it should snap to 3
     assert routing.get_nearest_node(3.0415, 101.7400, nodes, graph) == 3
+
+# --- Street path (directions) ---
+@pytest.fixture(scope="module")
+def street_names(data):
+    return load.get_street_names(data)
+
+
+def test_street_path_three_streets(graph, street_names):
+    result = routing.street_path([6, 3, 2, 4], street_names, graph)
+    names = [street for street, _ in result]
+    assert names == ["Test Lane", "Test Road North-South", "Test Road East-West"]
+    for _, metres in result:
+        assert metres == pytest.approx(55.5, abs=0.2)
+
+
+def test_street_path_merges_same_street(graph, street_names):
+    # 1 -> 2 -> 3 is two pieces of the same road, so it should be ONE entry
+    result = routing.street_path([1, 2, 3], street_names, graph)
+    assert len(result) == 1
+    assert result[0][0] == "Test Road North-South"
+    assert result[0][1] == pytest.approx(111.2, abs=0.3)
+
+
+def test_street_path_two_streets(graph, street_names):
+    result = routing.street_path([5, 2, 1], street_names, graph)
+    assert [street for street, _ in result] == ["Test Road East-West", "Test Road North-South"]
+
+
+def test_street_path_single_edge(graph, street_names):
+    result = routing.street_path([4, 6], street_names, graph)
+    assert result[0][0] == "Test One-Way"
+    assert result[0][1] == pytest.approx(55.6, abs=0.2)
+
+
+def test_street_path_no_movement(graph, street_names):
+    # start and destination are the same node, so there's nothing to drive
+    assert routing.street_path([2], street_names, graph) == []
+
+
+def test_street_path_total_matches_a_star(graph, nodes, street_names):
+    # the street distances should add up to the route distance A* reported
+    path, distance = routing.a_star_search(6, 4, graph, nodes)
+    result = routing.street_path(path, street_names, graph)
+    assert sum(metres for _, metres in result) == pytest.approx(distance)
+
+
+def test_street_path_no_repeated_neighbours(graph, nodes, street_names):
+    # the same street should never appear twice in a row
+    for start in range(1, 7):
+        for target in range(1, 7):
+            path, _ = routing.a_star_search(start, target, graph, nodes)
+            result = routing.street_path(path, street_names, graph)
+            for (a, _), (b, _) in zip(result, result[1:]):
+                assert a != b, f"{start}->{target}: '{a}' listed twice in a row"
