@@ -67,11 +67,11 @@ def a_star_search(start,target,graph,nodes_list):
 #This function will convert our reconstructed path of nodes into proper street names where the nodes are located and the total distance needed to travel for each
 #street, streets that might need to be taken again are seperated
 """
-node_and_street = pair of nodes and the street that they're in
+node_and_street = pair of nodes and the street that they're on
 """
-def street_path(path,node_and_street,graph):
+def street_path(path,node_and_street,graph,nodes_list):
     street_path = []
-
+    previous = None
     for node1,node2 in zip(path, path[1:]):
         street_name = node_and_street.get((node1,node2))
         distance = 0
@@ -83,10 +83,15 @@ def street_path(path,node_and_street,graph):
 
         if len(street_path) > 0:
             if street_path[-1][0] != street_name:
-                street_path.append([street_name,distance])
+                angle_in = load.calculate_bearing(nodes_list[previous],nodes_list[node1])
+                angle_out = load.calculate_bearing(nodes_list[node1],nodes_list[node2])
+                turn = load.determine_turn(angle_in,angle_out)
+                street_path.append([street_name,distance,turn])
             else:
                 street_path[-1][1] += distance
         else:
-            street_path.append([street_name,distance])
+            street_path.append([street_name,distance,"start"])
+
+        previous = node1
 
     return street_path
