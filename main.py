@@ -49,8 +49,8 @@ if __name__ == "__main__":
     destination = routing.get_nearest_node(destination[0], destination[1],list_of_nodes,node_graphs)
 
     path, distance = routing.a_star_search(location,destination,node_graphs,list_of_nodes)
-    street_path = routing.street_path(path,nodes_and_streets,node_graphs)
+    street_path = routing.street_path(path,nodes_and_streets,node_graphs,list_of_nodes)
 
-    for street_name, distance_to_travel in street_path:
-        print(f"{street_name}:{distance_to_travel:.2f}m")
+    for street_name, distance_to_travel, turn in street_path:
+        print(f"{turn} at {street_name}:{distance_to_travel:.2f}m")
     print(f"distance:{(distance/1000):.2f}km")
