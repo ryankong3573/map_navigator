@@ -93,9 +93,33 @@ def get_street_names(data):
                     nodes_and_street[node2,node1] = street_name
     return nodes_and_street
 
+#This function calculates the direction to reach one node to the other
+def calculate_bearing(node1, node2):
+    lon1 = math.radians(node1["lon"])
+    lon2 = math.radians(node2["lon"])
+    lat1 = math.radians(node1["lat"])
+    lat2 = math.radians(node2["lat"])
 
+    x = math.sin(lon2-lon1) * math.cos(lat2)
+    y = math.cos(lat1)*math.sin(lat2) - math.sin(lat1)*math.cos(lat2)*math.cos(lon2-lon1)
 
+    return (math.degrees(math.atan2(x,y)) + 360) % 360 
 
+#This function determines whether the direction requires the person to turn left right straight or make a u-turn
+def determine_turn(in_angle, out_angle):
+    d = out_angle - in_angle
+    turn = ((d+540)%360) - 180
+
+    if -30<=turn<30:
+        direction = "continue straight"
+    elif 30<=turn<150:
+        direction = "turn right"
+    elif -150<=turn<-30:
+        direction = "turn left"
+    else:
+        direction = "U-turn"
+
+    return direction 
 
 if __name__ == "__main__":
     data = convert_to_dict("map_data.json")
