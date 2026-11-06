@@ -10,12 +10,18 @@ CAR_ROADS = {
 }
 
 #This function converts a json file to a python dictionary
+'''
+json_file = json file fetched from API
+'''
 def convert_to_dict(json_file):
     with open(json_file,"r") as file:
         data = json.load(file)
     return data
 
 #This function will create a dictionary of nodes their coordinates as values e.g. node1 : {-321312,421341}
+'''
+data = raw json data fetched from API converted to a python dictionary
+'''
 def create_list_of_nodes(data):
     dictionary = {}
     for ways in data["elements"]:
@@ -24,6 +30,9 @@ def create_list_of_nodes(data):
     return dictionary
 
 #This function will return the distance of two nodes using haversine's formula
+'''
+node and neighbour node = two keys that contains the lat and lon of one node
+'''
 def calculate_distance(node, neighbour_node):
     R =  6371000 #earth's radius in meters
     phi1, phi2 = math.radians(node["lat"]), math.radians(neighbour_node["lat"])
@@ -37,36 +46,32 @@ def calculate_distance(node, neighbour_node):
     return c
 
 #This function will return a dictionary of each node as a key and its neigbouring nodes' id and distance as values
+'''
+data = raw data fetched from API
+nodes_list = list of nodes from raw_data containing the nodes and their lon and lat
+'''
 def get_neighbours(data, nodes_list):
     neighbour_graph = {}
 
     #Iterates through every single road in our database
     for way in data["elements"]:
-
-        if way["tags"]["highway"] not in CAR_ROADS:
+        if way["tags"].get("highway") not in CAR_ROADS:
             continue
 
         #create a list of nodes in one single way and pair the up with their neigbouring nodes
-        nodes = []
-        for node in way["nodes"]:
-            nodes.append(node)
-        paired_nodes = list(zip(nodes,nodes[1:]))
+        paired_nodes = zip(way["nodes"],way["nodes"][1:])
 
         #create a dictionary of the node in nodes, in each node key stores its neighbours and each of their distance to the key node
-        for pairs in paired_nodes:
-            node1 = pairs[0]
-            node2 = pairs[1]
-
+        for node1, node2 in paired_nodes:
             node1_coords = nodes_list[node1]
             node2_coords = nodes_list[node2]
 
             distance_between_nodes = calculate_distance(node1_coords, node2_coords)
 
-            if node1 not in neighbour_graph.keys():
-                neighbour_graph[node1] = []
-            if node2 not in neighbour_graph.keys():
-                neighbour_graph[node2] = []
+            neighbour_graph.setdefault(node1, [])
+            neighbour_graph.setdefault(node2, [])
 
+            #Meaning A->B but not B->A
             if way["tags"].get("oneway") == "yes":
                 neighbour_graph[node1].append((node2, distance_between_nodes))
 
@@ -77,6 +82,9 @@ def get_neighbours(data, nodes_list):
     return neighbour_graph 
 
 #This function returns a dictionary of paired nodes and the street name the node is on e.g (1,2):Jalan Damai Perdana
+'''
+data = raw data fetched from API
+'''
 def get_street_names(data):
     nodes_and_street ={
 
@@ -84,13 +92,13 @@ def get_street_names(data):
     for way in data["elements"]:
         if way["tags"].get("highway") in CAR_ROADS:
             street_name = way["tags"].get("name","unnamed road")
-            nodes = []
-            for node in way["nodes"]:
-                nodes.append(node)
-            for node1,node2 in zip(nodes, nodes[1:]):
+
+            for node1,node2 in zip(way["nodes"], way["nodes"][1:]):
                 nodes_and_street[node1,node2] = street_name
+
                 if way["tags"].get("oneway") != "yes":
                     nodes_and_street[node2,node1] = street_name
+
     return nodes_and_street
 
 #This function calculates the direction to reach one node to the other
@@ -106,6 +114,10 @@ def calculate_bearing(node1, node2):
     return (math.degrees(math.atan2(x,y)) + 360) % 360 
 
 #This function determines whether the direction requires the person to turn left right straight or make a u-turn
+'''
+in_angle = the bearing of the first street's last and second last node
+out_angle = the bearing of the next street's first and second node
+'''
 def determine_turn(in_angle, out_angle):
     d = out_angle - in_angle
     turn = ((d+540)%360) - 180
