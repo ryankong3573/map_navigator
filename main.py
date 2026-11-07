@@ -1,42 +1,42 @@
 import load, routing, geocode
 
-def confirm_locations():
-    done = False
-    while(not done):
-        location_found = False
-        while(not location_found):
-            user_location = geocode.get_user_location()
-            result = geocode.return_location_node(user_location)
+#This program will confirm with the user whether the location provided is the one they had intended
+"""
+result = lat,lon and name of location
+label = destination or location
+"""
+def confirm_location(result,label):
+    if result != None:
+        lat,lon,location = result
+        print(location)
+    else:
+        print("Couldn't find that place please try again")
+        return None,None,False
 
-            if result != None:
-                loc_lat,loc_lon,location = result
-                print(location)
-                if (input("Is this your location? [Y/N]: ")).upper() == "Y":
-                    location_found = True
-            else:
-                print("Couldn't find that place please try again")
+    if (input(f"Is this your {label}? [Y/N]: ")).upper() == "Y":
+        return lat,lon, True
+    else:
+        return None,None,False
 
-        destination_found = False
-        while(not destination_found):
-            user_location = geocode.get_user_destination()
-            result = geocode.return_location_node(user_location)
+#This program will ask the user to provide the program with its current location and their intended destination
+def ask_locations():
+    location_found = False
+    while(not location_found):
+        user_location = geocode.get_user_location()
+        result = geocode.return_location_node(user_location)
+        loc_lat, loc_lon, location_found = confirm_location(result,"location")
 
-            if result != None:
-                des_lat,des_lon,destination = result
-                print(destination)
-                if (input("Is this your destination? [Y/N]: ")).upper() == "Y":
-                    destination_found = True
-            else:
-                print("Couldn't find that place please try again")           
+    destination_found = False
+    while(not destination_found):
+        user_location = geocode.get_user_destination()
+        result = geocode.return_location_node(user_location)
+        des_lat, des_lon, destination_found = confirm_location(result,"destination")
 
-        a_to_b = (loc_lat, loc_lon), (des_lat, des_lon)
-        return a_to_b
+    a_to_b = (loc_lat, loc_lon), (des_lat, des_lon)
+    return a_to_b
         
-
-    
-
 if __name__ == "__main__":
-    location, destination = confirm_locations()
+    location, destination = ask_locations()
 
     #Data setup for route navigation 
     raw_data = load.convert_to_dict("map_data.json") 
