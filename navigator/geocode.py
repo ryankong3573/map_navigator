@@ -18,7 +18,7 @@ def return_location_node(user_location):
         "q":user_location,
         "limit":1,
         "countrycodes":"my",
-        "viewbox":"101.73048,3.05507,101.76292,3.03495",
+        "viewbox":"101.68336,3.10803,101.81314,3.02756",
         "bounded":1,
         "format":"json"
     }
