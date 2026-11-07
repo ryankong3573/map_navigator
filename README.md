@@ -4,6 +4,8 @@ A command-line route finder for a neighbourhood in Cheras, Kuala Lumpur, built f
 
 Type where you are and where you want to go, and it finds the shortest drivable route with **A\* search** and gives you turn-by-turn directions.
 
+![Route from Jalan Damai Perdana to SJK (C) Connaught 2](route.png)
+
 ```
 Where are you currently?: Jalan Damai Perdana 2/6C
 OK
@@ -13,7 +15,6 @@ Where do you want to go?: Connaught 2
 OK
 SJK (C) Connaught 2, Jalan Desa Cahaya 12, Bandar Damai Perdana, Cheras, ..., Malaysia
 Is this your destination? [Y/N]: Y
-start at Jalan Damai Perdana: 880.22m
 turn right at Persiaran Damai Perdana: 349.42m
 turn left at unnamed road: 366.67m
 distance: 1.60km
@@ -28,6 +29,7 @@ distance: 1.60km
 - **A\* pathfinding** with a straight-line heuristic, which finds the true shortest route
 - **Turn-by-turn directions**: the route is grouped by street, and each turn (left / right / straight / U-turn) is worked out from compass bearings
 - **A pytest test suite** on a small hand-checkable map
+- **Route drawn on an interactive map** with Folium, with start and destination markers
 
 ## How it works
 
@@ -92,7 +94,7 @@ pytest
 - Covers **one neighbourhood**. A bigger map would need a faster nearest-node search (e.g. a KD-tree), and possibly the routing rewritten in C++.
 - `service` roads (car parks, back lanes) count as drivable, which sometimes adds "unnamed road" stretches.
 - Address search depends on how well Nominatim matches the text. Street names work best typed in OSM's order, e.g. "Jalan Damai Perdana 2/6C".
-- **Planned:** drawing the route on an interactive map (Folium), and a simple web interface.
+
 
 ## Acknowledgements
 
