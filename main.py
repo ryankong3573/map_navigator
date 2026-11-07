@@ -1,4 +1,6 @@
 import navigator.load as load, navigator.routing as routing, navigator.geocode as geocode
+import map
+import webbrowser
 
 #This program will confirm with the user whether the location provided is the one they had intended
 """
@@ -54,3 +56,6 @@ if __name__ == "__main__":
     for street_name, distance_to_travel, turn in street_path:
         print(f"{turn} at {street_name}:{distance_to_travel:.2f}m")
     print(f"distance:{(distance/1000):.2f}km")
+
+    map.draw_map(path,list_of_nodes)
+    webbrowser.open("route.html")
