@@ -25,8 +25,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 PROJECT = os.path.dirname(HERE) if os.path.basename(HERE) == "testings" else HERE
 sys.path.insert(0, PROJECT)
 
-import load  # noqa: E402
-import routing  # noqa: E402
+import navigator.load as load  # noqa: E402
+import navigator.routing as routing  # noqa: E402
 
 
 def find_test_data():

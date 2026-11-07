@@ -1,4 +1,4 @@
-import load, routing, geocode
+import navigator.load as load, navigator.routing as routing, navigator.geocode as geocode
 
 #This program will confirm with the user whether the location provided is the one they had intended
 """

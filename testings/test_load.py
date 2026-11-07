@@ -21,7 +21,7 @@ import pytest
 # --- Make load.py and test_data.json findable, wherever this file lives ---
 sys.path.append("..")
 
-import load  
+import navigator.load as load  
 
 @pytest.fixture(scope="module")
 def data():
