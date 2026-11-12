@@ -1,103 +1,108 @@
-# map_navigator
+# Map Navigator
 
-A command-line route finder for a neighbourhood in Cheras, Kuala Lumpur, built from scratch in Python on real OpenStreetMap data.
+A Google Maps–style route finder for a small area of Kuala Lumpur (Cheras). Type a starting point and a destination, and the app finds a route along the road network and draws it on an interactive map.
 
-Type where you are and where you want to go, and it finds the shortest drivable route with **A\* search** and gives you turn-by-turn directions.
+It's built as a full-stack web app: a **FastAPI** backend handles geocoding and pathfinding, and a **Leaflet.js** frontend displays the route.
 
-![Route from Jalan Damai Perdana to SJK (C) Connaught 2](route.png)
-
-```
-Where are you currently?: Jalan Damai Perdana 2/6C
-OK
-Jalan Damai Perdana 2/6C, Bandar Damai Perdana, Cheras, ..., Selangor, Malaysia
-Is this your location? [Y/N]: Y
-Where do you want to go?: Connaught 2
-OK
-SJK (C) Connaught 2, Jalan Desa Cahaya 12, Bandar Damai Perdana, Cheras, ..., Malaysia
-Is this your destination? [Y/N]: Y
-turn right at Persiaran Damai Perdana: 349.42m
-turn left at unnamed road: 366.67m
-distance: 1.60km
-```
+![Route on the map](screenshot.png) <!-- TODO: replace with your screenshot -->
 
 ## Features
 
-- **Real road data** pulled straight from the **Overpass API** and parsed by hand (no OSMnx), then cached locally
-- **A road graph** built from OSM ways and nodes, with distances from the haversine formula, **one-way roads** respected, and **non-car roads** (footways, steps, cycleways) filtered out
-- **Address search** through OpenStreetMap's **Nominatim** API, limited to the mapped area
-- **Snapping** typed places to the nearest drivable road node
-- **A\* pathfinding** with a straight-line heuristic, which finds the true shortest route
-- **Turn-by-turn directions**: the route is grouped by street, and each turn (left / right / straight / U-turn) is worked out from compass bearings
-- **A pytest test suite** on a small hand-checkable map
-- **Route drawn on an interactive map** with Folium, with start and destination markers
+- Search for places by name (e.g. "ekocheras" → "EkoCheras Mall")
+- Snaps each place to the nearest road node, rejecting places outside the mapped area
+- Finds a route between the two nodes using graph search over real OpenStreetMap road data
+- Draws the route on an interactive map, with start and end markers
 
 ## How it works
 
-```
-1. Fetch     Overpass API ──▶ map_data.json
-2. Build     map_data.json ──▶ node lookup + road graph + street names
-3. Search    "SJK (C) Connaught 2" ──▶ Nominatim ──▶ (lat, lon)
-4. Snap      (lat, lon) ──▶ nearest drivable node
-5. Route     A* (start node → goal node) ──▶ path + distance
-6. Direct    path ──▶ streets + turns
-```
-
-More detail on each module, the data structures and the design choices is in [`navigator/README.md`](navigator/README.md).
-
-## Project structure
+1. **Road data:** road data for a small KL area was pulled from the OpenStreetMap **Overpass API** and cached in `map_data.json`, so the app doesn't re-download it on every run.
+2. **Graph:** on server startup, the data is loaded once into a graph of nodes (road points) and their neighbours.
+3. **Request flow:** when the user clicks **Find route**, the frontend calls the API in three steps:
 
 ```
-map_navigator/
-├── main.py            # the command-line app: ask → search → route → directions
-├── navigator/
-│   ├── query.py       # fetch road data from Overpass, save to map_data.json
-│   ├── load.py        # build the node lookup, road graph and street names
-│   ├── geocode.py     # address → coordinates via Nominatim
-│   └── routing.py     # nearest node, A* search, directions
-├── testings/          # pytest suite + test_data.json
-└── map_data.json      # cached road data for the mapped area
+place names ──► /choose_location ──► coordinates + full place names
+coordinates ──► /nearest         ──► nearest road node for each point
+node IDs    ──► /routing         ──► route as a list of [lat, lon] points
 ```
 
-## Getting started
+4. **Display:** the frontend draws the returned coordinates as a polyline with Leaflet, and zooms the map to fit the route.
 
-Requires Python 3.
+## Tech stack
+
+- **Backend:** Python, FastAPI, Uvicorn
+- **Frontend:** HTML, JavaScript, Leaflet.js
+- **Data:** OpenStreetMap (Overpass API), OSM map tiles
+
+## API endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/health` | Checks that the server is up and the graph loaded |
+| GET | `/choose_location?user_location=...&user_destination=...` | Looks up both places and returns their coordinates and names |
+| GET | `/nearest?loc_lat=...&loc_lon=...&des_lat=...&des_lon=...` | Returns the nearest road node to each point (404 if outside the mapped area) |
+| GET | `/routing?location=...&destination=...` | Returns the route between two node IDs as `[lat, lon]` pairs (404 if no route exists) |
+
+Interactive API docs are available at `http://127.0.0.1:8000/docs` while the server is running.
+
+## Running locally
+
+**1. Clone the repo and set up a virtual environment**
 
 ```bash
 git clone https://github.com/ryankong3573/map_navigator.git
 cd map_navigator
-
 python -m venv venv
-source venv/bin/activate        # Windows PowerShell: venv\Scripts\Activate.ps1
-
-pip install requests pytest
 ```
 
-**Run the app:**
+Activate it:
+- Windows (PowerShell): `.\venv\Scripts\Activate.ps1`
+- Mac/Linux: `source venv/bin/activate`
+
+**2. Install dependencies**
+
 ```bash
-python main.py
+pip install -r requirements.txt
 ```
 
-**Refresh the map data** (only needed to change the area or update the roads):
+**3. Start the API**
+
 ```bash
-python navigator/query.py
-```
-The public Overpass servers are sometimes busy. If you get a 502 or 504, wait a minute and try again.
-
-**Run the tests:**
-```bash
-pytest
+fastapi dev api.py
 ```
 
-## Limitations and next steps
+The API runs at `http://127.0.0.1:8000`.
 
-- Routes by **distance**, not travel time. Adding speed estimates per road type would give more realistic routes.
-- Covers **one neighbourhood**. A bigger map would need a faster nearest-node search (e.g. a KD-tree), and possibly the routing rewritten in C++.
-- `service` roads (car parks, back lanes) count as drivable, which sometimes adds "unnamed road" stretches.
-- Address search depends on how well Nominatim matches the text. Street names work best typed in OSM's order, e.g. "Jalan Damai Perdana 2/6C".
+**4. Open the frontend**
 
+Serve the HTML page with a local server, e.g. the VS Code **Live Server** extension, which opens it at `http://localhost:5500`. Then enter a start point and destination and click **Find route**.
+
+## Project structure
+
+<!-- TODO: adjust to match your actual files -->
+
+```
+map_navigator/
+├── api.py              # FastAPI app and endpoints
+├── navigator/
+│   ├── load.py         # Loads map_data.json and builds the graph
+│   └── routing.py      # Nearest-node lookup and pathfinding
+├── map_data.json       # Cached OpenStreetMap road data
+├── index.html          # Frontend page
+├── test.js             # Frontend logic (API calls, Leaflet map)
+└── requirements.txt
+```
+
+## Limitations
+
+- Only covers a small area of Cheras, KL. Searches outside it are rejected.
+- Road data is a static snapshot and doesn't update automatically.
+
+## Possible improvements
+
+- Click on the map to choose start and end points
+- Show route distance and estimated travel time
+- Deploy online so it can be used without running it locally
 
 ## Acknowledgements
 
-- Map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, available under the Open Database License (ODbL).
-- Road data from the [Overpass API](https://overpass-api.de/), and address search from [Nominatim](https://nominatim.org/).
-- The test files were generated with help from Claude, then reviewed and approved. All application code was written by me.
+Map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors.
