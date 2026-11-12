@@ -41,7 +41,7 @@ def get_user_locations(user_location:str, user_destination:str):
     location_lat, location_lon, location_name = location
     destination_lat, destination_lon, destination_name  = destination
 
-    return (location_lat, location_lon), (destination_lat,destination_lon)
+    return (location_lat, location_lon,location_name), (destination_lat,destination_lon,destination_name)
 
 @app.get("/nearest")
 def get_nodes(loc_lat: float, loc_lon:float, des_lat:float, des_lon:float):
@@ -49,6 +49,8 @@ def get_nodes(loc_lat: float, loc_lon:float, des_lat:float, des_lon:float):
     destination = routing.get_nearest_node(des_lat,des_lon,list_of_nodes,node_graphs)
 
     #node ids
+    if location is None or destination is None:
+        raise HTTPException(status_code=404, detail="Could not find location")
     return location, destination
 
 @app.get("/routing")
@@ -57,8 +59,10 @@ def get_route(location: int, destination: int):
 
     if path is None:
         raise HTTPException(status_code=404, detail="route not found")
-    
-    street_path = routing.street_path(path,nodes_and_streets,node_graphs,list_of_nodes)
 
-    return street_path
+    node_coordinates = []
+    for nodes in path:
+        node_coordinates.append([list_of_nodes[nodes]["lat"],list_of_nodes[nodes]["lon"]])
+    return node_coordinates
+
 

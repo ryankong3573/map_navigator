@@ -1,5 +1,5 @@
 async function health_check(){
-    const response = await fetch("\health");
+    const response = await fetch("/health");
     const data = await response.json();
     console.log(data.nodes)
 }
@@ -26,10 +26,19 @@ async function get_route(location,destination){
     const url = `http://127.0.0.1:8000/routing?location=${encodeURIComponent(location)}&destination=${encodeURIComponent(destination)}`
     const response = await fetch(url)
     if(response.ok){
-        const data = response.json()
+        const data = await response.json()
         return data
     }
 }
+
+const map = L.map("map").setView([3.0738,101.7350],14)
+let currentLine = null
+let startPoint = null
+let endPoint = null
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "&copy; OpenStreetMap contributors"
+}).addTo(map)
+
 
 document.getElementById("go").addEventListener("click", async ()=> {
 
@@ -49,24 +58,25 @@ document.getElementById("go").addEventListener("click", async ()=> {
         return;
     }
 
-    //Display the name of the actual location and destination
-    console.log("done")
-    const from_name = result[0][2]
-    const to_name = result[1][2]
     resultText.textContent = `Location Found`
-    const toText = document.getElementById("to_name")
-    const fromText = document.getElementById("from_name")
-    toText.innerText = to_name
-    document.getElementById("connecter").innerText = "to"
-    fromText.innerText = from_name
     
-
     //get the nodes' id
     const locAnddesNode = await get_nearest_node(result[1][0],result[1][1],result[0][0],result[0][1]) //returns location, destination node id
     const route = await get_route(locAnddesNode[0],locAnddesNode[1])
 
-    document.getElementById("route_status").textContent = route
+    if(!route){
+        resultText.textContent = "Could not find a route"
+        return
+    }
+    if(currentLine || startPoint || endPoint){
+        currentLine.remove()
+        startPoint.remove()
+        endPoint.remove()
+    }
+    currentLine = L.polyline(route, {color: "blue", weight:5}).addTo(map)
+    startPoint = L.circleMarker(route[0], {radius:8, color:"green", fillColor: "green", fillOpacity:1}).addTo(map).bindPopup("Start")
+    endPoint = L.circleMarker(route.at(-1), {radius:8, color:"green", fillColor: "red", fillOpacity:1}).addTo(map).bindPopup("End")
+    map.fitBounds(currentLine.getBounds())
 })
-
 
 

@@ -21,6 +21,8 @@ def get_nearest_node(lat,lon,nodes_list,graph):
         if nearest_node_distance > distance_to_target:
             nearest_node = node
             nearest_node_distance = distance_to_target
+    if nearest_node_distance > 800:
+        return None
     return nearest_node
 
 def reconstruct_path(came_from, target):
@@ -62,7 +64,7 @@ def a_star_search(start,target,graph,nodes_list):
                     f = new_g + load.calculate_distance(nodes_list[neighbour],nodes_list[target])
                     heapq.heappush(queue, (f,neighbour))
 
-    return None
+    return None, None
 
 #This function will convert our reconstructed path of nodes into proper street names where the nodes are located and the total distance needed to travel for each
 #street, streets that might need to be taken again are seperated
