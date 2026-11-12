@@ -4,13 +4,12 @@ A Google Maps–style route finder for a small area of Kuala Lumpur (Cheras). Ty
 
 It's built as a full-stack web app: a **FastAPI** backend handles geocoding and pathfinding, and a **Leaflet.js** frontend displays the route.
 
-![Route on the map](screenshot.png) <!-- TODO: replace with your screenshot -->
-
+![Route on the map](example.png) 
 ## Features
 
 - Search for places by name (e.g. "ekocheras" → "EkoCheras Mall")
 - Snaps each place to the nearest road node, rejecting places outside the mapped area
-- Finds a route between the two nodes using graph search over real OpenStreetMap road data
+- Finds a route between the two nodes using A star search over real OpenStreetMap road data
 - Draws the route on an interactive map, with start and end markers
 
 ## How it works
@@ -78,17 +77,20 @@ Serve the HTML page with a local server, e.g. the VS Code **Live Server** extens
 
 ## Project structure
 
-<!-- TODO: adjust to match your actual files -->
 
 ```
 map_navigator/
-├── api.py              # FastAPI app and endpoints
+├── api.py                  # FastAPI app and endpoints
 ├── navigator/
-│   ├── load.py         # Loads map_data.json and builds the graph
-│   └── routing.py      # Nearest-node lookup and pathfinding
-├── map_data.json       # Cached OpenStreetMap road data
-├── index.html          # Frontend page
-├── test.js             # Frontend logic (API calls, Leaflet map)
+│   ├── query.py            # Fetches road data from the Overpass API into map_data.json
+│   ├── geocode.py          # Converts place names to coordinates via Nominatim
+│   ├── load.py             # Loads map_data.json and builds the graph
+│   └── routing.py          # Nearest-node lookup and pathfinding
+├── testings/               # Tests
+├── location_input.html     # Frontend page
+├── front_end.js            # Frontend logic (API calls, Leaflet map)
+├── map_data.json           # Cached OpenStreetMap road data
+├── example.png             # Screenshot
 └── requirements.txt
 ```
 
