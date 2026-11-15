@@ -63,6 +63,7 @@ document.getElementById("go").addEventListener("click", async ()=> {
 
     //Only runs if the nodes cannot be found
     const resultText = document.getElementById("status")
+    resultText.textContent = "Searching...."
     if(!result){
         resultText.textContent = "Could not find that place"
         return;
