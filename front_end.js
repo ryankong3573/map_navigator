@@ -6,6 +6,23 @@ async function health_check(){
     console.log(data.nodes)
 }
 
+async function geocode(place) {
+    const params = new URLSearchParams({
+        q: place,
+        limit: 1,
+        countrycodes: "my",
+        viewbox: "101.68336,3.10803,101.81314,3.02756",
+        bounded: 1,
+        format: "json"
+    })
+    const response = await fetch(`https://nominatim.openstreetmap.org/search?${params}`)
+    if (!response.ok) return null
+
+    const data = await response.json()
+    if (data.length === 0) return null
+    return [Number(data[0].lat), Number(data[0].lon), data[0].display_name]
+}
+
 //Returns two tuples, containing the location and destination details (lat,lon,name)
 async function choose_location(from, to){
     const url = `${API}/choose_location?user_location=${encodeURIComponent(from)}&user_destination=${encodeURIComponent(to)}`;
@@ -34,6 +51,15 @@ async function get_route(location,destination){
         const data = await response.json()
         return data 
     }
+}
+
+//Will return a path from location to destination in a dictionary {"coordinates": contains all ids of each node in path,"distance":distance required to travel in meters}
+async function choose_location(from, to) {
+    const loc = await geocode(from)
+    await new Promise(r => setTimeout(r, 1000))   // respect the 1-request-per-second limit
+    const des = await geocode(to)
+    if (!loc || !des) return null
+    return [loc, des]
 }
 
 //MAP VIEWS
