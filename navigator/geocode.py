@@ -2,6 +2,8 @@ import requests
 
 url = "https://nominatim.openstreetmap.org/search"
 
+
+
 #This function returns the lat, lon and name of the user's typed location ("NOT ALWAYS ACCURATE")
 def return_location_node(user_location):
     params ={
@@ -13,8 +15,7 @@ def return_location_node(user_location):
         "format":"json"
     }
 
-    headers = {"User-Agent":"my_project v0.1"}
-
+    headers = {"User-Agent": "map_navigator/1.0 (https://github.com/ryankong3573/map_navigator)"}
     response = requests.get(url=url, params=params, headers=headers, timeout=60)
     if response.status_code == 200:
         print("OK")
