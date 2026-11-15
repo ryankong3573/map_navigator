@@ -9,9 +9,7 @@ app = FastAPI(title="Map Navigator")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],     # allow any page
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=["https://your-static-site.onrender.com"]
 )
 
 raw_data = load.convert_to_dict("map_data.json") 
