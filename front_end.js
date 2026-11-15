@@ -8,7 +8,7 @@ async function health_check(){
 
 //Returns two tuples, containing the location and destination details (lat,lon,name)
 async function choose_location(from, to){
-    const url = `API/choose_location?user_location=${encodeURIComponent(from)}&user_destination=${encodeURIComponent(to)}`;
+    const url = `${API}/choose_location?user_location=${encodeURIComponent(from)}&user_destination=${encodeURIComponent(to)}`;
     const response = await fetch(url);
     if(response.ok){
         const data = await response.json()
@@ -18,7 +18,7 @@ async function choose_location(from, to){
 
 //Will get the nearest nodes's id that best matches the intended location and destination
 async function get_nearest_node(des_lat,des_lon,loc_lat,loc_lon){
-    const url = `API/nearest?loc_lat=${encodeURIComponent(loc_lat)}&loc_lon=${encodeURIComponent(loc_lon)}&des_lon=${encodeURIComponent(des_lon)}&des_lat=${encodeURIComponent(des_lat)}`;
+    const url = `${API}/nearest?loc_lat=${encodeURIComponent(loc_lat)}&loc_lon=${encodeURIComponent(loc_lon)}&des_lon=${encodeURIComponent(des_lon)}&des_lat=${encodeURIComponent(des_lat)}`;
     const response = await fetch(url)
     if(response.ok){
         const data = await response.json()
@@ -28,7 +28,7 @@ async function get_nearest_node(des_lat,des_lon,loc_lat,loc_lon){
 
 //Will return a path from location to destination in a dictionary {"coordinates": contains all ids of each node in path,"distance":distance required to travel in meters}
 async function get_route(location,destination){
-    const url = `API/routing?location=${encodeURIComponent(location)}&destination=${encodeURIComponent(destination)}`
+    const url = `${API}/routing?location=${encodeURIComponent(location)}&destination=${encodeURIComponent(destination)}`
     const response = await fetch(url)
     if(response.ok){
         const data = await response.json()
