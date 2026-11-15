@@ -3,7 +3,7 @@ import navigator.routing as routing
 import navigator.geocode as geocode
 import navigator.load as load
 from fastapi.middleware.cors import CORSMiddleware
-
+import time
 
 app = FastAPI(title="Map Navigator")
 
@@ -35,7 +35,7 @@ def get_user_locations(user_location:str, user_destination:str):
     location = geocode.return_location_node(user_location)
     if location is None:
         raise HTTPException(status_code=404, detail="Location not found")
-    
+    time.sleep(1)
     destination = geocode.return_location_node(user_destination)
     if destination is None:
         raise HTTPException(status_code=404, detail="Destination not found")
@@ -49,6 +49,7 @@ def get_user_locations(user_location:str, user_destination:str):
 @app.get("/nearest")
 def get_nodes(loc_lat: float, loc_lon:float, des_lat:float, des_lon:float):
     location = routing.get_nearest_node(loc_lat,loc_lon,list_of_nodes,node_graphs)
+    time.sleep(1)
     destination = routing.get_nearest_node(des_lat,des_lon,list_of_nodes,node_graphs)
 
     #node ids
