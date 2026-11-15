@@ -78,9 +78,9 @@ def street_path(path,node_and_street,graph,nodes_list):
         street_name = node_and_street.get((node1,node2))
         distance = 0
 
-        for neighbour_id, neigbour_distance in graph[node1]:
+        for neighbour_id, neighbour_distance in graph[node1]:
             if neighbour_id == node2:
-                distance = neigbour_distance
+                distance = neighbour_distance
                 break
 
         if len(street_path) > 0:

@@ -4,6 +4,7 @@ async function health_check(){
     console.log(data.nodes)
 }
 
+//Returns two tuples, containing the location and destination details (lat,lon,name)
 async function choose_location(from, to){
     const url = `http://127.0.0.1:8000/choose_location?user_location=${encodeURIComponent(from)}&user_destination=${encodeURIComponent(to)}`;
     const response = await fetch(url);
@@ -13,6 +14,7 @@ async function choose_location(from, to){
     }
 }
 
+//Will get the nearest nodes's id that best matches the intended location and destination
 async function get_nearest_node(des_lat,des_lon,loc_lat,loc_lon){
     const url = `http://127.0.0.1:8000/nearest?loc_lat=${encodeURIComponent(loc_lat)}&loc_lon=${encodeURIComponent(loc_lon)}&des_lon=${encodeURIComponent(des_lon)}&des_lat=${encodeURIComponent(des_lat)}`;
     const response = await fetch(url)
@@ -22,24 +24,30 @@ async function get_nearest_node(des_lat,des_lon,loc_lat,loc_lon){
     }
 }
 
+//Will return a path from location to destination in a dictionary {"coordinates": contains all ids of each node in path,"distance":distance required to travel in meters}
 async function get_route(location,destination){
     const url = `http://127.0.0.1:8000/routing?location=${encodeURIComponent(location)}&destination=${encodeURIComponent(destination)}`
     const response = await fetch(url)
     if(response.ok){
         const data = await response.json()
-        return data
+        return data 
     }
 }
 
+//MAP VIEWS
 const map = L.map("map").setView([3.0738,101.7350],14)
+const AVG_SPEED = 30
 let currentLine = null
 let startPoint = null
 let endPoint = null
+let routeLabel = null
+
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "&copy; OpenStreetMap contributors"
 }).addTo(map)
 
 
+//Runs when frontend button is clicked
 document.getElementById("go").addEventListener("click", async ()=> {
 
     //read user's location and destination
@@ -68,14 +76,24 @@ document.getElementById("go").addEventListener("click", async ()=> {
         resultText.textContent = "Could not find a route"
         return
     }
-    if(currentLine || startPoint || endPoint){
+    if(currentLine || startPoint || endPoint || routeLabel){
         currentLine.remove()
         startPoint.remove()
         endPoint.remove()
+        routeLabel.remove()
     }
-    currentLine = L.polyline(route, {color: "blue", weight:5}).addTo(map)
-    startPoint = L.circleMarker(route[0], {radius:8, color:"green", fillColor: "green", fillOpacity:1}).addTo(map).bindPopup("Start")
-    endPoint = L.circleMarker(route.at(-1), {radius:8, color:"green", fillColor: "red", fillOpacity:1}).addTo(map).bindPopup("End")
+    currentLine = L.polyline(route["coordinates"], {color: "blue", weight:5}).addTo(map)
+    startPoint = L.circleMarker(route['coordinates'][0], {radius:8, color:"green", fillColor: "green", fillOpacity:1}).addTo(map).bindPopup("Start")
+    endPoint = L.circleMarker(route['coordinates'].at(-1), {radius:8, color:"red", fillColor: "red", fillOpacity:1}).addTo(map).bindPopup("End")
+
+    //Place the distance and time in the center of path
+    const coords = route["coordinates"]
+    const middle = coords[Math.floor(coords.length / 2)]
+
+    let distance_km = (route["distance"] / 1000).toFixed(2)
+    let estimate_time = (km / AVG_SPEED).toFixed(2)
+
+    routeLabel = L.tooltip({permanent: true, direction:"top"}).setLatLng(middle).setContent(`${distance_km} km ${estimate_time} h `).addTo(map)
     map.fitBounds(currentLine.getBounds())
 })
 

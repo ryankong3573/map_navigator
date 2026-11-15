@@ -1,18 +1,8 @@
 import requests
 
-
 url = "https://nominatim.openstreetmap.org/search"
 
-
-def get_user_destination():
-    place = input("Where do you want to go?: ")
-    return place
-
-
-def get_user_location():
-    location = input("Where are you currently?: ")
-    return location
-
+#This function returns the lat, lon and name of the user's typed location ("NOT ALWAYS ACCURATE")
 def return_location_node(user_location):
     params ={
         "q":user_location,
@@ -38,4 +28,4 @@ def return_location_node(user_location):
         print(f"ERROR! {response.status_code}")  
 
 if __name__ == "__main__":
-    print(return_location_node(get_user_destination()))
+    pass

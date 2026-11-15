@@ -5,15 +5,15 @@ import navigator.load as load
 from fastapi.middleware.cors import CORSMiddleware
 
 
-
 app = FastAPI(title="Map Navigator")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],     # allow any page, fine while developing
+    allow_origins=["*"],     # allow any page
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 raw_data = load.convert_to_dict("map_data.json") 
 list_of_nodes = load.create_list_of_nodes(raw_data) #Contains every single node with the latitudes and longitudes of each node
 node_graphs = load.get_neighbours(raw_data, list_of_nodes) #Contains each node's neigbouring nodes and the distance between them
@@ -26,7 +26,7 @@ def info():
         "nodes": len(node_graphs)
     }
 
-
+#Returns two tuples, containing the location and destination details (lat,lon,name)
 @app.get("/choose_location")
 def get_user_locations(user_location:str, user_destination:str):
 
@@ -43,6 +43,7 @@ def get_user_locations(user_location:str, user_destination:str):
 
     return (location_lat, location_lon,location_name), (destination_lat,destination_lon,destination_name)
 
+#Will get the nearest nodes's id that best matches the intended location and destination
 @app.get("/nearest")
 def get_nodes(loc_lat: float, loc_lon:float, des_lat:float, des_lon:float):
     location = routing.get_nearest_node(loc_lat,loc_lon,list_of_nodes,node_graphs)
@@ -53,6 +54,7 @@ def get_nodes(loc_lat: float, loc_lon:float, des_lat:float, des_lon:float):
         raise HTTPException(status_code=404, detail="Could not find location")
     return location, destination
 
+#Will return a path from location to destination in a dictionary {"coordinates": contains all ids of each node in path,"distance":distance required to travel in meters}
 @app.get("/routing")
 def get_route(location: int, destination: int):
     path, distance = routing.a_star_search(location,destination,node_graphs,list_of_nodes)
@@ -63,6 +65,6 @@ def get_route(location: int, destination: int):
     node_coordinates = []
     for nodes in path:
         node_coordinates.append([list_of_nodes[nodes]["lat"],list_of_nodes[nodes]["lon"]])
-    return node_coordinates
+    return {"coordinates": node_coordinates, "distance":distance}
 
 
