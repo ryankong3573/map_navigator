@@ -6,6 +6,7 @@ async function health_check(){
     console.log(data.nodes)
 }
 
+//This function will return the lat lon and location name of user's typed address
 async function geocode(place) {
     const params = new URLSearchParams({
         q: place,
