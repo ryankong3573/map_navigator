@@ -1,4 +1,4 @@
-const API = "https://map-navigator-1-fs5f.onrender.com"
+const API = "https://map-navigator-z41u.onrender.com"
 
 async function health_check(){
     const response = await fetch("/health");
