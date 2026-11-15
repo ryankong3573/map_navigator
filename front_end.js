@@ -120,7 +120,7 @@ document.getElementById("go").addEventListener("click", async ()=> {
     const middle = coords[Math.floor(coords.length / 2)]
 
     let distance_km = (route["distance"] / 1000).toFixed(2)
-    let estimate_time = (km / AVG_SPEED).toFixed(2)
+    let estimate_time = (distance_km / AVG_SPEED).toFixed(2)
 
     routeLabel = L.tooltip({permanent: true, direction:"top"}).setLatLng(middle).setContent(`${distance_km} km ${estimate_time} h `).addTo(map)
     map.fitBounds(currentLine.getBounds())
