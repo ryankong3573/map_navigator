@@ -1,0 +1,23 @@
+#Python caches and virtual environments
+**/__pycache__
+**/.pytest_cache
+.venv/
+venv/
+
+#Git
+.git/
+.gitignore
+
+#Not needed by the API
+testings/
+example.png
+**/*.md
+
+#Frontend (served by nginx in Compose)
+frontend/
+
+#Docker files themselves
+Dockerfile
+docker-compose.yml
+.dockerignore
+

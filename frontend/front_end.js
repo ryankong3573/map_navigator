@@ -1,4 +1,10 @@
-const API = "https://map-navigator-z41u.onrender.com"
+let  API;
+if(window.location.hostname == "localhost"){
+    API = "http://localhost:8000"
+}
+else{
+   API = "https://map-navigator-z41u.onrender.com"
+}
 
 async function health_check(){
     const response = await fetch("/health");

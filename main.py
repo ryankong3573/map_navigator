@@ -3,6 +3,9 @@ import navigator.routing as routing
 import navigator.geocode as geocode
 import navigator.load as load
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+
+
 import time
 
 app = FastAPI(title="Map Navigator")
@@ -12,6 +15,7 @@ app.add_middleware(
     allow_origins=[
     "https://map-navigator-3.onrender.com",
     "http://localhost:5500",
+    "http://localhost:8080",
     "http://127.0.0.1:5500",
 ]
 )
