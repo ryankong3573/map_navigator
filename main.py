@@ -13,7 +13,7 @@ app = FastAPI(title="Map Navigator")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-    "https://map-navigator-3.onrender.com",
+    "https://map-navigation-frontend.onrender.com/",
     "http://localhost:5500",
     "http://localhost:8080",
     "http://127.0.0.1:5500",
