@@ -1,9 +1,9 @@
 let  API;
-if(window.location.hostname == "localhost"){
+if(window.location.hostname === "localhost"){
     API = "http://localhost:8000"
 }
 else{
-   API = "https://map-navigator-z41u.onrender.com"
+   API = "https://map-navigation-wvis.onrender.com/"
 }
 
 async function health_check(){
