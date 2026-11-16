@@ -5,13 +5,11 @@ A* routes to the frontend. Run locally with ``fastapi dev main.py`` (docs at
 http://localhost:8000/docs).
 """
 
-import time
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-import navigator.geocode as geocode
 import navigator.load as load
 import navigator.routing as routing
 
@@ -42,26 +40,6 @@ nodes_and_streets = load.get_street_names(raw_data)         # (node ID, node ID)
 def health():
     """Check that the server is up and report how many road nodes were loaded."""
     return {"status": "ok", "nodes": len(node_graphs)}
-
-
-@app.get("/choose_location")
-def get_user_locations(user_location: str, user_destination: str):
-    """Geocode the start and destination with Nominatim.
-
-    Returns ``[[lat, lon, name], [lat, lon, name]]``. Not used by the current
-    frontend, which geocodes in the browser instead.
-    """
-    location = geocode.return_location_node(user_location)
-    if location is None:
-        raise HTTPException(status_code=404, detail="Location not found")
-
-    time.sleep(1)  # Nominatim allows about one request per second
-
-    destination = geocode.return_location_node(user_destination)
-    if destination is None:
-        raise HTTPException(status_code=404, detail="Destination not found")
-
-    return location, destination
 
 
 @app.get("/nearest")

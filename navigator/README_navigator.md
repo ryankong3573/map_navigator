@@ -20,7 +20,7 @@ routing.py   (lat, lon) ──▶ nearest road node
 
 A full request goes through the modules in this order:
 
-1. `geocode.return_location_node()` turns the start and destination text into coordinates.
+1. The start and destination text are turned into coordinates with Nominatim. The web app does this in the browser (`geocode()` in `frontend/front_end.js`); `geocode.return_location_node()` is the Python version of the same lookup.
 2. `routing.get_nearest_node()` snaps each point to the closest drivable road node.
 3. `routing.a_star_search()` finds the shortest path between the two nodes.
 4. `routing.street_path()` turns that path into directions such as "turn right onto Persiaran Damai Perdana, 349 m".
@@ -68,7 +68,9 @@ Running `python -m navigator.load` from the project root loads `map_data.json` a
 
 The search only covers Malaysia (`countrycodes=my`) and only the map area (`viewbox` with `bounded=1`), so it can't return a place the road graph doesn't cover. `VIEWBOX` has to match `BBOX` in `query.py`.
 
-Nominatim allows about one request per second, which is why `main.py` waits a second between the start and destination lookups.
+The web app doesn't call this module: the frontend sends the same Nominatim search from the browser. It's kept for using the navigator from Python, e.g. scripts or the shell.
+
+Nominatim allows about one request per second, so wait a second between lookups (the frontend does the same).
 
 ### `routing.py`: find the route
 
