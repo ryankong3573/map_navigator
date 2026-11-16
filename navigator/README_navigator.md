@@ -24,7 +24,7 @@ routing.py    (lat, lon) ──▶ nearest road node
 
 Sends an Overpass API query for every road (`way["highway"]`) inside a bounding box around Bandar Damai Perdana, and saves the reply to `map_data.json`. It uses `out geom`, so each way carries its own node coordinates.
 
-Only needs to be run when changing the map area or refreshing the data. Everything else works from the saved file.
+Only needs to be run when changing the map area or refreshing the data. Everything else works from the saved file. Run it from the project root with `python -m navigator.query`.
 
 ### `load.py`: build the graph
 
@@ -38,7 +38,7 @@ Only needs to be run when changing the map area or refreshing the data. Everythi
 | `calculate_bearing(a, b)` | Compass direction (0–360°, 0 = north) from one coordinate to another |
 | `determine_turn(in, out)` | Turns two bearings into `"turn left"`, `"turn right"`, `"continue straight"` or `"U-turn"` |
 
-`CAR_ROADS` is the set of `highway` values treated as drivable (motorway down to residential, link roads, `living_street`, `service`, `road`). Footways, steps, cycleways and so on are left out of the graph.
+`CAR_ROADS` is the set of `highway` values treated as drivable (motorway down to residential, link roads, `living_street`, `service`, `road`). Footways, steps, cycleways and so on are left out of the graph. The road types in `query.py`'s Overpass query should be kept in step with this set.
 
 ### `geocode.py`: addresses to coordinates
 
@@ -48,8 +48,8 @@ Uses OpenStreetMap's **Nominatim** search API to turn what the user types into `
 
 | Function | What it does |
 |---|---|
-| `get_nearest_node(lat, lon, nodes, graph)` | Snaps a point to the closest node **in the graph**, so it always lands on a drivable road |
-| `a_star_search(start, goal, graph, nodes)` | A* search; returns `(path, distance_in_metres)`, or `None` if there's no route |
+| `get_nearest_node(lat, lon, nodes, graph)` | Snaps a point to the closest node **in the graph**, so it always lands on a drivable road. Returns `None` if that node is more than `MAX_SNAP_DISTANCE_M` (800 m) away |
+| `a_star_search(start, goal, graph, nodes)` | A* search; returns `(path, distance_in_metres)`, or `(None, None)` if there's no route |
 | `reconstruct_path(came_from, goal)` | Follows `came_from` back from the goal to rebuild the path |
 | `street_path(path, street_names, graph, nodes)` | Groups the path by street and works out the turn at each street change |
 
