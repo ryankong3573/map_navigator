@@ -1,136 +1,154 @@
-let  API;
-if(window.location.hostname === "localhost"){
-    API = "http://localhost:8000"
-}
-else{
-   API = "https://map-navigation-wvis.onrender.com/"
+// Front end for Map Navigator.
+//
+// Flow when "Find route" is clicked:
+//   1. geocode()           typed text      -> [lat, lon, name]   (Nominatim, in the browser)
+//   2. get_nearest_node()  two coordinates -> two road node IDs  (backend /nearest)
+//   3. get_route()         two node IDs    -> path + distance    (backend /routing)
+//   4. draw_route()        path            -> line, markers and a distance/time label on the map
+
+// --- Settings ---
+
+const API = ["localhost", "127.0.0.1"].includes(window.location.hostname)
+    ? "http://localhost:8000"
+    : "https://map-navigation-wvis.onrender.com"   // no trailing slash: paths below start with "/"
+
+const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
+const VIEWBOX = "101.68336,3.10803,101.81314,3.02756"   // map area (west, north, east, south); must match the backend
+const MAP_CENTER = [3.0738, 101.7350]
+const MAP_ZOOM = 14
+const AVG_SPEED_KMH = 30   // used for the rough travel-time estimate
+
+
+// --- API calls ---
+
+// Fetches JSON from a URL. Returns null if the request fails or the server returns an error.
+async function fetch_json(url) {
+    try {
+        const response = await fetch(url)
+        if (!response.ok) return null
+        return await response.json()
+    } catch (error) {
+        console.error("Request failed:", url, error)
+        return null
+    }
 }
 
-async function health_check(){
-    const response = await fetch("/health");
-    const data = await response.json();
-    console.log(data.nodes)
-}
-
-//This function will return the lat lon and location name of user's typed address
+// Looks up a typed address with Nominatim, limited to the map area.
+// Returns [lat, lon, display_name], or null if nothing matched.
 async function geocode(place) {
     const params = new URLSearchParams({
         q: place,
         limit: 1,
         countrycodes: "my",
-        viewbox: "101.68336,3.10803,101.81314,3.02756",
+        viewbox: VIEWBOX,
         bounded: 1,
-        format: "json"
+        format: "json",
     })
-    const response = await fetch(`https://nominatim.openstreetmap.org/search?${params}`)
-    if (!response.ok) return null
-
-    const data = await response.json()
-    if (data.length === 0) return null
+    const data = await fetch_json(`${NOMINATIM_URL}?${params}`)
+    if (!data || data.length === 0) return null
     return [Number(data[0].lat), Number(data[0].lon), data[0].display_name]
 }
 
-//Returns two tuples, containing the location and destination details (lat,lon,name)
-async function choose_location(from, to){
-    const url = `${API}/choose_location?user_location=${encodeURIComponent(from)}&user_destination=${encodeURIComponent(to)}`;
-    const response = await fetch(url);
-    if(response.ok){
-        const data = await response.json()
-        return [data[0], data[1]]
-    }
-}
-
-//Will get the nearest nodes's id that best matches the intended location and destination
-async function get_nearest_node(des_lat,des_lon,loc_lat,loc_lon){
-    const url = `${API}/nearest?loc_lat=${encodeURIComponent(loc_lat)}&loc_lon=${encodeURIComponent(loc_lon)}&des_lon=${encodeURIComponent(des_lon)}&des_lat=${encodeURIComponent(des_lat)}`;
-    const response = await fetch(url)
-    if(response.ok){
-        const data = await response.json()
-        return [data[0],data[1]]
-    }
-}
-
-//Will return a path from location to destination in a dictionary {"coordinates": contains all ids of each node in path,"distance":distance required to travel in meters}
-async function get_route(location,destination){
-    const url = `${API}/routing?location=${encodeURIComponent(location)}&destination=${encodeURIComponent(destination)}`
-    const response = await fetch(url)
-    if(response.ok){
-        const data = await response.json()
-        return data 
-    }
-}
-
-//Will return a path from location to destination in a dictionary {"coordinates": contains all ids of each node in path,"distance":distance required to travel in meters}
+// Geocodes the start and destination.
+// Returns [[lat, lon, name], [lat, lon, name]], or null if either can't be found.
 async function choose_location(from, to) {
     const loc = await geocode(from)
-    await new Promise(r => setTimeout(r, 1000))   // respect the 1-request-per-second limit
+    await new Promise(resolve => setTimeout(resolve, 1000))   // Nominatim allows about 1 request per second
     const des = await geocode(to)
     if (!loc || !des) return null
     return [loc, des]
 }
 
-//MAP VIEWS
-const map = L.map("map").setView([3.0738,101.7350],14)
-const AVG_SPEED = 30
-let currentLine = null
-let startPoint = null
-let endPoint = null
-let routeLabel = null
+// Snaps both points to the nearest drivable road node.
+// Returns [location_node_id, destination_node_id], or null.
+async function get_nearest_node(loc_lat, loc_lon, des_lat, des_lon) {
+    const params = new URLSearchParams({ loc_lat, loc_lon, des_lat, des_lon })
+    return fetch_json(`${API}/nearest?${params}`)
+}
+
+// Finds the shortest route between two node IDs.
+// Returns {coordinates: [[lat, lon], ...], distance: metres}, or null.
+async function get_route(location, destination) {
+    const params = new URLSearchParams({ location, destination })
+    return fetch_json(`${API}/routing?${params}`)
+}
+
+
+// --- Map ---
+
+const map = L.map("map").setView(MAP_CENTER, MAP_ZOOM)
 
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: "&copy; OpenStreetMap contributors"
+    attribution: "&copy; OpenStreetMap contributors",
 }).addTo(map)
 
+// Everything drawn for the current route, so it can be cleared before drawing the next one.
+let routeLayers = []
 
-//Runs when frontend button is clicked
-document.getElementById("go").addEventListener("click", async ()=> {
+function clear_route() {
+    routeLayers.forEach(layer => layer.remove())
+    routeLayers = []
+}
 
-    //read user's location and destination
-    const fromBox = document.getElementById("from")
-    const toBox = document.getElementById("to")
+// Draws the route line, start/end markers, and a distance/time label in the middle of the route.
+function draw_route(route) {
+    clear_route()
 
-    //gets the closest node's coordinates
-    const from = fromBox.value;
-    const to = toBox.value;
-    const result = await choose_location(from,to) //returns (lat,lon,location),(lat,lon,destination)
+    const coords = route.coordinates
+    const line = L.polyline(coords, { color: "blue", weight: 5 })
+    const start = L.circleMarker(coords[0], { radius: 8, color: "green", fillColor: "green", fillOpacity: 1 }).bindPopup("Start")
+    const end = L.circleMarker(coords.at(-1), { radius: 8, color: "red", fillColor: "red", fillOpacity: 1 }).bindPopup("End")
 
-    //Only runs if the nodes cannot be found
-    const resultText = document.getElementById("status")
-    resultText.textContent = "Searching...."
-    if(!result){
-        resultText.textContent = "Could not find that place"
-        return;
-    }
+    const distanceKm = route.distance / 1000
+    const hours = distanceKm / AVG_SPEED_KMH
+    const label = L.tooltip({ permanent: true, direction: "top" })
+        .setLatLng(coords[Math.floor(coords.length / 2)])
+        .setContent(`${distanceKm.toFixed(2)} km ${hours.toFixed(2)} h`)
 
-    resultText.textContent = `Location Found`
-    
-    //get the nodes' id
-    const locAnddesNode = await get_nearest_node(result[1][0],result[1][1],result[0][0],result[0][1]) //returns location, destination node id
-    const route = await get_route(locAnddesNode[0],locAnddesNode[1])
+    routeLayers = [line, start, end, label]
+    routeLayers.forEach(layer => layer.addTo(map))
+    map.fitBounds(line.getBounds())
+}
 
-    if(!route){
-        resultText.textContent = "Could not find a route"
+
+// --- Button ---
+
+const fromBox = document.getElementById("from")
+const toBox = document.getElementById("to")
+const goButton = document.getElementById("go")
+const statusText = document.getElementById("status")
+
+async function find_route() {
+    statusText.textContent = "Searching...."
+
+    const places = await choose_location(fromBox.value, toBox.value)
+    if (!places) {
+        statusText.textContent = "Could not find that place"
         return
     }
-    if(currentLine || startPoint || endPoint || routeLabel){
-        currentLine.remove()
-        startPoint.remove()
-        endPoint.remove()
-        routeLabel.remove()
+    const [loc, des] = places
+    statusText.textContent = "Location Found"
+
+    const nodes = await get_nearest_node(loc[0], loc[1], des[0], des[1])
+    if (!nodes) {
+        statusText.textContent = "That place is too far from any road on the map"
+        return
     }
-    currentLine = L.polyline(route["coordinates"], {color: "blue", weight:5}).addTo(map)
-    startPoint = L.circleMarker(route['coordinates'][0], {radius:8, color:"green", fillColor: "green", fillOpacity:1}).addTo(map).bindPopup("Start")
-    endPoint = L.circleMarker(route['coordinates'].at(-1), {radius:8, color:"red", fillColor: "red", fillOpacity:1}).addTo(map).bindPopup("End")
 
-    //Place the distance and time in the center of path
-    const coords = route["coordinates"]
-    const middle = coords[Math.floor(coords.length / 2)]
+    const route = await get_route(nodes[0], nodes[1])
+    if (!route) {
+        statusText.textContent = "Could not find a route"
+        return
+    }
 
-    let distance_km = (route["distance"] / 1000).toFixed(2)
-    let estimate_time = (distance_km / AVG_SPEED).toFixed(2)
+    draw_route(route)
+}
 
-    routeLabel = L.tooltip({permanent: true, direction:"top"}).setLatLng(middle).setContent(`${distance_km} km ${estimate_time} h `).addTo(map)
-    map.fitBounds(currentLine.getBounds())
+goButton.addEventListener("click", async () => {
+    goButton.disabled = true   // stop double clicks from sending a second search
+    try {
+        await find_route()
+    } finally {
+        goButton.disabled = false
+    }
 })
-
-
