@@ -20,8 +20,8 @@ It's built as a full-stack web app: a **FastAPI** backend handles nearest-node l
 
 ## How it works
 
-1. **Road data:** road data for a small KL area is pulled from the OpenStreetMap **Overpass API** (`query.py`) and cached in `map_data.json`, so the app doesn't re-download it on every run.
-2. **Graph:** on server startup, the data is loaded once into a graph of nodes (road points) and their neighbours (`load.py`).
+1. **Road data:** road data for a small KL area is pulled from the OpenStreetMap **Overpass API** (`navigator/query.py`) and cached in `map_data.json`, so the app doesn't re-download it on every run.
+2. **Graph:** on server startup, the data is loaded once into a graph of nodes (road points) and their neighbours (`navigator/load.py`).
 3. **Geocoding:** the place names the user types are converted to coordinates by OpenStreetMap's **Nominatim** service. This is done **in the browser**, so each request comes from the visitor's own connection.
 4. **Request flow:**
 
@@ -49,7 +49,7 @@ Travel time is an estimate based on an assumed average city driving speed of **3
 |---|---|---|
 | GET | `/health` | Checks that the server is up and the graph loaded |
 | GET | `/nearest?loc_lat=...&loc_lon=...&des_lat=...&des_lon=...` | Returns the nearest road node to each point (404 if outside the mapped area) |
-| GET | `/routing?location=...&destination=...` | Returns the route between two node IDs as `[lat, lon]` coordinates, plus the total distance (404 if no route exists) |
+| GET | `/routing?location=...&destination=...` | Returns the route between two node IDs as `[lat, lon]` coordinates, plus the total distance (404 if a node ID is unknown or no route exists) |
 
 Interactive API docs are available at `/docs` on the backend.
 
@@ -113,7 +113,7 @@ cd frontend
 python -m http.server 5500
 ```
 
-Then open `http://localhost:5500` (use `localhost`, not `127.0.0.1`, so the frontend picks the local API), enter a start point and destination, and click **Find route**.
+Then open `http://localhost:5500`, enter a start point and destination, and click **Find route**. The frontend uses the local API when the page is opened on `localhost` or `127.0.0.1`.
 
 ## Project structure
 
@@ -123,13 +123,13 @@ map_navigator/
 ├── navigator/
 │   ├── query.py            # Fetches road data from the Overpass API into map_data.json
 │   ├── load.py             # Loads map_data.json and builds the graph
-│   ├── geocode.py          # Geocoding helpers
+│   ├── geocode.py          # Python geocoding helper (the web app geocodes in the browser instead)
 │   └── routing.py          # Nearest-node lookup and A* pathfinding
 ├── frontend/
 │   ├── index.html          # Frontend page
 │   ├── front_end.js        # Frontend logic (geocoding, API calls, Leaflet map)
 │   └── Dockerfile          # nginx image that serves the frontend
-├── testings/               # Tests
+├── testings/               # Tests (run with pytest)
 ├── Dockerfile              # Backend image (Python 3.14 + Uvicorn)
 ├── compose.yml             # Runs the backend and frontend containers together
 ├── .dockerignore           # Files kept out of the backend image
@@ -141,7 +141,7 @@ map_navigator/
 ## Limitations
 
 - Only covers a small area of Cheras, KL. Searches outside it are rejected.
-- Road data is a static snapshot and doesn't update automatically.
+- Road data is a static snapshot and doesn't update automatically. To refresh it, run `python -m navigator.query` from the project root, then restart the API.
 - Travel time uses a single average speed, so it's a rough estimate.
 - Place search relies on Nominatim, which may not find every business by name.
 
