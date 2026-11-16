@@ -2,9 +2,9 @@
 
 A Google Maps–style route finder for a small area of Kuala Lumpur (Cheras). Type a starting point and a destination, and the app finds a route along the road network, draws it on an interactive map, and shows the distance and estimated travel time.
 
-It's built as a full-stack web app: a **FastAPI** backend handles nearest-node lookup and **A\*** pathfinding, and a **Leaflet.js** frontend handles place search and displays the route.
+It's built as a full-stack web app: a **FastAPI** backend handles nearest-node lookup and **A\*** pathfinding, and a **Leaflet.js** frontend handles place search and displays the route. Both parts are containerised with **Docker** and run together with **Docker Compose**.
 
-**Live demo:** https://map-navigator-3.onrender.com
+**Live demo:** https://map-navigation-frontend.onrender.com
 
 > The backend runs on a free tier that sleeps when idle, so the first search after a while can take 30–60 seconds while it wakes up. Searches after that are fast.
 
@@ -40,7 +40,8 @@ Travel time is an estimate based on an assumed average city driving speed of **3
 - **Backend:** Python, FastAPI, Uvicorn
 - **Frontend:** HTML, JavaScript, Leaflet.js
 - **Data:** OpenStreetMap (Overpass API for road data, Nominatim for geocoding, OSM map tiles)
-- **Hosting:** Render (backend as a web service, frontend as a static site)
+- **Containers:** Docker, Docker Compose, nginx (serves the frontend locally)
+- **Hosting:** Render (backend as a Docker web service, frontend as a static site)
 
 ## API endpoints
 
@@ -52,7 +53,30 @@ Travel time is an estimate based on an assumed average city driving speed of **3
 
 Interactive API docs are available at `/docs` on the backend.
 
-## Running locally
+## Running locally with Docker (recommended)
+
+The only requirement is [Docker Desktop](https://www.docker.com/products/docker-desktop/). You don't need Python or a virtual environment.
+
+```bash
+git clone https://github.com/ryankong3573/map_navigator.git
+cd map_navigator
+docker compose up --build
+```
+
+Then open `http://localhost:8080`, enter a start point and destination, and click **Find route**.
+
+This starts two containers:
+
+| Service | What it runs | Address |
+|---|---|---|
+| `api` | FastAPI backend (Uvicorn, Python 3.14) | `http://localhost:8000` (docs at `/docs`) |
+| `web` | Frontend served by nginx | `http://localhost:8080` |
+
+When the page is opened on `localhost`, the frontend automatically calls the local API instead of the deployed one.
+
+Stop everything with `Ctrl+C`, then `docker compose down`.
+
+## Running locally without Docker
 
 **1. Clone the repo and set up a virtual environment**
 
@@ -75,41 +99,40 @@ pip install -r requirements.txt
 **3. Start the API**
 
 ```bash
-fastapi dev api.py
+fastapi dev main.py
 ```
 
-The API runs at `http://127.0.0.1:8000`.
+The API runs at `http://localhost:8000`.
 
-**4. Point the frontend at your local API**
+**4. Serve the frontend**
 
-In `front_end.js`, set the API address to your local server:
-
-```js
-const API = "http://127.0.0.1:8000"
-```
-
-**5. Serve the frontend**
-
-In a second terminal, from the project folder:
+In a second terminal, from the `frontend` folder:
 
 ```bash
+cd frontend
 python -m http.server 5500
 ```
 
-Then open `http://localhost:5500`, enter a start point and destination, and click **Find route**.
+Then open `http://localhost:5500` (use `localhost`, not `127.0.0.1`, so the frontend picks the local API), enter a start point and destination, and click **Find route**.
 
 ## Project structure
 
 ```
 map_navigator/
-├── api.py                  # FastAPI app and endpoints
+├── main.py                 # FastAPI app and endpoints
 ├── navigator/
 │   ├── query.py            # Fetches road data from the Overpass API into map_data.json
 │   ├── load.py             # Loads map_data.json and builds the graph
+│   ├── geocode.py          # Geocoding helpers
 │   └── routing.py          # Nearest-node lookup and A* pathfinding
+├── frontend/
+│   ├── index.html          # Frontend page
+│   ├── front_end.js        # Frontend logic (geocoding, API calls, Leaflet map)
+│   └── Dockerfile          # nginx image that serves the frontend
 ├── testings/               # Tests
-├── index.html              # Frontend page
-├── front_end.js            # Frontend logic (geocoding, API calls, Leaflet map)
+├── Dockerfile              # Backend image (Python 3.14 + Uvicorn)
+├── compose.yml             # Runs the backend and frontend containers together
+├── .dockerignore           # Files kept out of the backend image
 ├── map_data.json           # Cached OpenStreetMap road data
 ├── example.png             # Screenshot
 └── requirements.txt
