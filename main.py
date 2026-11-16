@@ -1,77 +1,97 @@
-from fastapi import FastAPI, HTTPException
-import navigator.routing as routing
-import navigator.geocode as geocode
-import navigator.load as load
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+"""FastAPI backend for Map Navigator.
 
+Loads the road graph once at startup, then serves nearest-node lookups and
+A* routes to the frontend. Run locally with ``fastapi dev main.py`` (docs at
+http://localhost:8000/docs).
+"""
 
 import time
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+
+import navigator.geocode as geocode
+import navigator.load as load
+import navigator.routing as routing
+
+MAP_FILE = Path(__file__).parent / "map_data.json"
 
 app = FastAPI(title="Map Navigator")
 
+# Browser origins allowed to call this API. An origin is scheme + host + port,
+# with no path and no trailing slash, or the browser won't match it.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-    "https://map-navigation-frontend.onrender.com/",
-    "http://localhost:5500",
-    "http://localhost:8080",
-    "http://127.0.0.1:5500",
-]
+        "https://map-navigation-frontend.onrender.com",
+        "http://localhost:5500",
+        "http://localhost:8080",
+        "http://127.0.0.1:5500",
+    ],
 )
 
-raw_data = load.convert_to_dict("map_data.json") 
-list_of_nodes = load.create_list_of_nodes(raw_data) #Contains every single node with the latitudes and longitudes of each node
-node_graphs = load.get_neighbours(raw_data, list_of_nodes) #Contains each node's neigbouring nodes and the distance between them
-nodes_and_streets = load.get_street_names(raw_data) #Contains pairs of nodes and the street that they are on
+# --- Load the map once at startup ---
+raw_data = load.convert_to_dict(MAP_FILE)
+list_of_nodes = load.create_list_of_nodes(raw_data)        # node ID -> {"lat", "lon"}
+node_graphs = load.get_neighbours(raw_data, list_of_nodes)  # node ID -> [(neighbour ID, metres), ...]
+nodes_and_streets = load.get_street_names(raw_data)         # (node ID, node ID) -> street name
+
 
 @app.get("/health")
-def info():
-    return {
-        "status": "ok",
-        "nodes": len(node_graphs)
-    }
+def health():
+    """Check that the server is up and report how many road nodes were loaded."""
+    return {"status": "ok", "nodes": len(node_graphs)}
 
-#Returns two tuples, containing the location and destination details (lat,lon,name)
+
 @app.get("/choose_location")
-def get_user_locations(user_location:str, user_destination:str):
+def get_user_locations(user_location: str, user_destination: str):
+    """Geocode the start and destination with Nominatim.
 
+    Returns ``[[lat, lon, name], [lat, lon, name]]``. Not used by the current
+    frontend, which geocodes in the browser instead.
+    """
     location = geocode.return_location_node(user_location)
     if location is None:
         raise HTTPException(status_code=404, detail="Location not found")
-    time.sleep(1)
+
+    time.sleep(1)  # Nominatim allows about one request per second
+
     destination = geocode.return_location_node(user_destination)
     if destination is None:
         raise HTTPException(status_code=404, detail="Destination not found")
-    
-    location_lat, location_lon, location_name = location
-    destination_lat, destination_lon, destination_name  = destination
 
-    return (location_lat, location_lon,location_name), (destination_lat,destination_lon,destination_name)
+    return location, destination
 
-#Will get the nearest nodes's id that best matches the intended location and destination
+
 @app.get("/nearest")
-def get_nodes(loc_lat: float, loc_lon:float, des_lat:float, des_lon:float):
-    location = routing.get_nearest_node(loc_lat,loc_lon,list_of_nodes,node_graphs)
-    time.sleep(1)
-    destination = routing.get_nearest_node(des_lat,des_lon,list_of_nodes,node_graphs)
+def get_nodes(loc_lat: float, loc_lon: float, des_lat: float, des_lon: float):
+    """Snap the start and destination to their nearest drivable road nodes.
 
-    #node ids
+    Returns ``[location_node_id, destination_node_id]``, or 404 if either
+    point is more than 800 m from the mapped roads.
+    """
+    location = routing.get_nearest_node(loc_lat, loc_lon, list_of_nodes, node_graphs)
+    destination = routing.get_nearest_node(des_lat, des_lon, list_of_nodes, node_graphs)
+
     if location is None or destination is None:
         raise HTTPException(status_code=404, detail="Could not find location")
     return location, destination
 
-#Will return a path from location to destination in a dictionary {"coordinates": contains all ids of each node in path,"distance":distance required to travel in meters}
+
 @app.get("/routing")
 def get_route(location: int, destination: int):
-    path, distance = routing.a_star_search(location,destination,node_graphs,list_of_nodes)
+    """Find the shortest route between two road node IDs.
 
+    Returns ``{"coordinates": [[lat, lon], ...], "distance": metres}``, or
+    404 if a node ID is unknown or no route exists.
+    """
+    if location not in node_graphs or destination not in node_graphs:
+        raise HTTPException(status_code=404, detail="Unknown node ID")
+
+    path, distance = routing.a_star_search(location, destination, node_graphs, list_of_nodes)
     if path is None:
         raise HTTPException(status_code=404, detail="route not found")
 
-    node_coordinates = []
-    for nodes in path:
-        node_coordinates.append([list_of_nodes[nodes]["lat"],list_of_nodes[nodes]["lon"]])
-    return {"coordinates": node_coordinates, "distance":distance}
-
-
+    coordinates = [[list_of_nodes[node]["lat"], list_of_nodes[node]["lon"]] for node in path]
+    return {"coordinates": coordinates, "distance": distance}
